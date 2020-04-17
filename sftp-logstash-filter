@@ -1,0 +1,53 @@
+filter
+{
+
+grok {
+  match => { "message" => ["%{SYSLOGTIMESTAMP:date} %{WORD:subsystem} %{PROG:prog}\[%{NUMBER:procid}\]: session %{WORD:action} for local user %{USER:uname} from \[%{IP:ipaddr}\]","%{SYSLOGTIMESTAMP:date} %{WORD:subsystem} %{PROG:prog}\[%{NUMBER:procid}\]: close \"%{PATH:filename}\" bytes read %{NUMBER:read_bytes} written %{NUMBER:written_bytes}"]
+}
+}
+
+if [action] == 'opened'
+{
+aggregate {
+ task_id =>  "%{procid}"
+ code => "map['username'] = event.get('uname');event.set('username',map['username'])"
+ map_action => "create"
+}
+
+}
+
+if [filename]
+{
+
+aggregate {
+ task_id =>  "%{procid}"
+ code => "event.set('username',map['username'])"
+ map_action => "update"
+
+}
+
+}
+
+
+if [action] == 'closed'
+{
+aggregate {
+ task_id => "%{procid}"
+ code => "event.set('username',map['username'])"
+ map_action => "update"
+ end_of_task => true
+
+
+}
+
+}
+
+
+
+if "_grokparsefailure" in [tags] {
+  drop { }
+}
+
+
+
+}
