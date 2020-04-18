@@ -25,6 +25,23 @@ aggregate {
  map_action => "update"
 
 }
+mutate {
+ convert => { "read_bytes" => "integer" "written_bytes" => "integer" }
+}
+
+if [read_bytes] > 0
+{
+mutate {
+add_field => {"operation" => "read"}
+}
+}
+
+if [written_bytes] > 0
+{
+mutate {
+add_field => {"operation" => "write"}
+}
+}
 
 }
 
